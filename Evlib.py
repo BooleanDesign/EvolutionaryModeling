@@ -3,7 +3,7 @@ Evolutionary Modeling Library
 writen by Nathan Diggins (Boolean Design)
 """
 import random as r
-
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -20,19 +20,26 @@ class Object:
 
 
 class Species:
-    def __init__(self):
-        # TODO: Write full species class.
-        return None
+    def __init__(self,name):
+        self.sp = name
+
+
+
 
 
 class Organism(Species, Object):
-    def __init__(self):
-        # TODO: Write full organism class
-        return None
+    def __init__(self,position,species,size,speed,sense):
+        Species.__init__(self,species)
+        Object.__init__(self,position)
+        self.intel = sense
+        self.size = size
+        self.speed = speed
+
 
 
 class Food(Object):
-    def __init__(self):
+    def __init__(self,position):
+        Object.__init__(self,position)
         # TODO: Write full Food class
         return None
 
@@ -62,7 +69,7 @@ class Board:
                     (self.x[-1][i], self.y[-1][i]) for i in range(self.size)] + [(self.x[:, 0][i], self.y[:, 0][i])
                                                                                  for i in range(self.size)]))
 
-    def remove_object(self, object):
+    def remove(self, object):
         """
         Removes an object from the board
         :param object: {class object}
@@ -73,7 +80,7 @@ class Board:
         self.objects.remove(object)
         return None
 
-    def add_object(self, object):
+    def append(self, object):
         """
         Allows for the addition of an object to the board
         :param object: {class object}
@@ -104,8 +111,32 @@ class Board:
                     This is a food object
                     """
                     # TODO: This allows for overlapping food objects... Is that okay?
-                    obj.position = (self.x[0][r.randint(0, self.size - 1)], self.y[r.randint(0, self.size - 1)][0])
+                    obj.position = (self.x[0][r.randint(1, self.size - 2)], self.y[r.randint(1, self.size - 2)][0])
                 else:
                     raise TypeError
         except:
             raise TypeError
+
+    def generate_plot(self,figure):
+        """
+        Generates a plot of the board
+        :param figure: {plt.axes type}
+        :return: None
+        """
+        try:
+            board_axes = figure.add_subplot(111)
+            board_axes.plot([0,self.size-1,self.size-1,0,0],[0,0,self.size-1,self.size-1,0],'r',linewidth=4) #Plot the borders
+            board_axes.plot([i.position[0] for i in self.objects if i.__class__.__name__ == 'Organism'],
+                            [i.position[1] for i in self.objects if i.__class__.__name__ == 'Organism'],'bx')
+            board_axes.plot([i.position[0] for i in self.objects if i.__class__.__name__ == 'Food'],
+                            [i.position[1] for i in self.objects if i.__class__.__name__ == 'Food'], 'go')
+        except:
+            raise ValueError
+
+
+fig1 = plt.figure()
+objs = [Organism((r.randint(1,10),r.randint(1,10))) for i in range(20)]+[Food((r.randint(1,10),r.randint(1,10))) for i in range(25)]
+B = Board(objs,11)
+B.reset_object_positions()
+B.generate_plot(fig1)
+plt.show()
