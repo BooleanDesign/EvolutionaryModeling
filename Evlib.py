@@ -3,14 +3,20 @@ Evolutionary Modeling Library
 writen by Nathan Diggins (Boolean Design)
 """
 import random as r
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 """
 Essential Configuration Parameters
 """
-turn_std_deviation = 0.2
-collision_distance = 0.08
+turn_std_deviation = 0.15
+collision_distance = 0.07
+# TODO: Add an explainatory comment
+traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.8, 0.10]}
+"""
+Class Definitions
+"""
 
 
 class Object:
@@ -37,11 +43,22 @@ class Species:
 
 
 class Organism(Species, Object):
-    def __init__(self, position, species, size, speed, sense):
+    def __init__(self, position, species, size=1.0, speed=0.1, sense=1.0, energy=1000):
+        """
+        Defines the initialization method for class organism
+        :param position: Position of the organism
+        :param species: what species it is
+        :param size: size kwarg
+        :param speed: speed kwarg
+        :param sense: sense kwarg
+        :param energy: Total energy kwarg
+        """
         Species.__init__(self, species)
         Object.__init__(self, position)
         self.direction = 0
+        self.energy = energy
         self.sensed_objects = []
+        self.hidden = False  # Used to hide non-playing organisms and objects
         self.intel = sense
         self.size = size
         self.speed = speed
@@ -57,11 +74,12 @@ class Organism(Species, Object):
         self.sensed_objects = []  # Clear the sensed objects and work through again
         for obj in board.objects:  # Iterate through the objects on the board to see if any are close.
             dif = obj - self
-            if dif[0] ** 2 + dif[1] ** 2 < collision_distance ** 2 and obj.__class__.__name__ == 'Food':  # If object is
-                # within grabbing distance
-                self.consume(obj, board)
-            elif dif[0] ** 2 + dif[
-                1] ** 2 < self.intel ** 2 and obj != self:  # If the distance to the object is less than sense...
+            if np.sqrt(dif[0] ** 2 + dif[
+                1] ** 2) < self.intel and obj != self:  # If the distance to the object is less than sense...
+                if np.sqrt(dif[0] ** 2 + dif[
+                    1] ** 2) < collision_distance and obj.__class__.__name__ == 'Food':  # If object is
+                    # within grabbing distance
+                    self.consume(obj, board)
                 self.sensed_objects.append(obj)
             else:
                 pass
@@ -74,6 +92,10 @@ class Organism(Species, Object):
         :return:
         """
         objs = self.sense_objects(board)  # Finds all close objects
+        self.energy -= 1
+        # TODO: Relate the size to the total energy expenditure
+        if self.energy <= 0 or self.hidden == True:
+            return False
         if 'Food' not in list(
                 set([i.__class__.__name__ for i in objs])):  # Checks if there is or is not food in the radius
             """
@@ -101,8 +123,10 @@ class Organism(Species, Object):
             """
             There is food in the sense area!
             """
-            closest_food_values = [self.distance(i) for i in self.sensed_objects]
-            closest_food = self.sensed_objects[closest_food_values.index(min(closest_food_values))]
+            close_food = [i for i in self.sensed_objects if
+                          i.__class__.__name__ == 'Food']  # creates a list of all sensed food
+            closest_food = close_food[
+                [self.distance(i) for i in close_food].index(min([self.distance(i) for i in close_food]))]
             self.direction = np.arctan2(closest_food.position[1] - self.position[1],
                                         closest_food.position[0] - self.position[0])
             self.position = (self.position[0] + self.speed * np.cos(self.direction),
@@ -119,10 +143,39 @@ class Organism(Species, Object):
         if object.__class__.__name__ != 'Food':  # If the object isn't food.
             return None
         else:
-            print 'FOOD!'
             self.food_count += 1
             board.remove(object)
             return None
+
+    def reproduce(self, board, trait_dictionary=traits, n=1):
+        """
+        Allows the organism to reproduce
+        :param trait_dictionary: {type dictionary, relates traits to the probability of mutation...
+        :return: {type organism} New organism
+        """
+        # TODO: Make this section scalable for new traits
+        seeds = [r.randint(1, 100) for i in range(3)]  # generates the random seeds
+        new_traits = []
+        # Size
+        if seeds[0] <= 100.0 * trait_dictionary['size'][0]:
+            # There was a mutation
+            new_traits.append(self.size + r.uniform(-1 * trait_dictionary['size'][1], trait_dictionary['size'][1]))
+        else:
+            new_traits.append(self.size)
+        # Speed
+        if seeds[1] <= 100.0 * trait_dictionary['speed'][0]:
+            # There was a mutation
+            new_traits.append(self.speed + r.uniform(-1 * trait_dictionary['speed'][1], trait_dictionary['speed'][1]))
+        else:
+            new_traits.append(self.speed)
+        # Sense
+        if seeds[2] <= 100.0 * trait_dictionary['sense'][0]:
+            # There was a mutation
+            new_traits.append(self.intel + r.uniform(-1 * trait_dictionary['sense'][1], trait_dictionary['sense'][1]))
+        else:
+            new_traits.append(self.intel)
+        board.append(Organism(self.position, self.sp, size=new_traits[0], speed=new_traits[1], sense=new_traits[2],
+                              energy=self.energy))
 
 
 class Food(Object):
@@ -159,8 +212,21 @@ class Board:
                                                                                  for i in range(self.size)]))
 
     def update(self):
-        for org in self.organisms:
-            org.update_position(self)
+        """
+        Single update sequence of the board. This will move all of the organisms, and remove those that run out of
+        energy. If an org runs out of energy, it is added to self.hidden to be replaced on the board later.
+        :return: None
+        """
+        temp_orgs = self.organisms[:]
+        for org in temp_orgs:
+            p = org.update_position(self)
+            if p == False:
+                org.hidden = True
+            else:
+                pass
+        self.food = [i for i in self.objects if i.__class__.__name__ == 'Food']
+        self.organisms = [i for i in self.objects if i.__class__.__name__ == 'Organism']
+        return None
 
     def remove(self, object):
         """
@@ -171,6 +237,8 @@ class Board:
         if object not in self.objects:
             raise ValueError
         self.objects.remove(object)
+        self.food = [i for i in self.objects if i.__class__.__name__ == 'Food']
+        self.organisms = [i for i in self.objects if i.__class__.__name__ == 'Organism']
         return None
 
     def append(self, object):
@@ -181,6 +249,8 @@ class Board:
         """
         try:
             self.objects.append(object)
+            self.food = [i for i in self.objects if i.__class__.__name__ == 'Food']
+            self.organisms = [i for i in self.objects if i.__class__.__name__ == 'Organism']
             return None
         except:
             raise ValueError
@@ -258,20 +328,37 @@ class Board:
         except:
             raise ValueError
 
+    def get_data(self):
+        """
+        This function will produce a wealth of data from the board at the given time
+        :return: Dictionary of valuable information
+        """
+        data = {'N': len(self.organisms),
+                'F': len(self.food),
+                'mean_speed': np.average([i.speed for i in self.organisms]),
+                'mean_intel': np.average([i.intel for i in self.organisms]),
+                'mean_size': np.average([i.size for i in self.organisms]),
+                'speed': [i.speed for i in self.organisms],
+                'intel': [i.intel for i in self.organisms],
+                'size': [i.size for i in self.organisms]}
+        return data
+
+
+'''
+species = Species('Nate')
+board = Board([Organism((0, 0), species,sense=10),Organism((0,0),species)] + [Food((0, 0)) for i in range(35)], 20)
+board.reset_object_positions()
+
+def animate(i):
+    fig1.clf()
+    print [(i.energy,i.position[0]) for i in board.organisms]
+    board.update()
+    h = board.generate_plot(fig1)
+    return h
 
 fig1 = plt.figure()
-nate = Species('Nate')
-objs = [Organism((r.randint(1, 10), r.randint(1, 10)), nate, 1, 0.1, 1.0)] + [
-    Food((r.randint(1, 10), r.randint(1, 10))) for i in range(25)]
-B = Board(objs, 11)
-B.reset_object_positions()
-pos = []
-for q in range(300):
-    B.update()
-    pos.append(B.organisms[0].position)
-
-x = [i[0] for i in pos]
-y = [i[1] for i in pos]
-B.generate_plot(fig1)
-plt.plot(x, y)
+ani = FuncAnimation(fig1,animate,frames=300,interval=1)
 plt.show()
+
+
+'''
