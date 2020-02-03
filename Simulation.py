@@ -23,27 +23,17 @@ if mode == 1:
         :traits = {"size": [0.00,1], "speed": [0.00,0.05], "sense":[0.00,0.10]}
     """
     species = E.Species('A')
-    initial_organisms = [E.Organism((0, 0), species, energy=500) for i in range(1)]
+    initial_organisms = [E.Organism((0, 0), species, energy=500) for i in range(30)]
     food_items = [E.Food((0, 0)) for i in range(50)]
     board = E.Board(initial_organisms + food_items, 100)
     datas = []
+    fig1 = plt.figure()
     for i in range(300):
-        board.reset_object_positions()
-        while len([k for k in board.organisms if k.hidden == False]) != 0:
-            board.update()
-        for org in board.organisms:
-            org.energy = 500
-            if org.food_count > 1:
-                org.hidden = False
-                org.reproduce(board)
-            if org.food_count < 1:
-                board.remove(org)
-            else:
-                org.hidden = False
-        print {i: i.food_count for i in board.organisms}
-        board.food = [E.Food((0, 0)) for i in range(300)]
+        board.run_day(100)
+        board.generate_plot(fig1)
+        plt.show()
         datas.append(board.get_data())
 
-    plt.plot(range(300), [np.average(datas[i]['intel']) for i in range(300)])
-    plt.plot(range(300), [datas[i]['N'] for i in range(300)])
+    plt.plot(range(30), [np.average(datas[i]['intel']) for i in range(300)])
+    # plt.plot(range(300), [datas[i]['N'] for i in range(300)])
     plt.show()

@@ -12,8 +12,9 @@ Essential Configuration Parameters
 """
 turn_std_deviation = 0.15
 collision_distance = 0.07
+ARP = 0.5
 # TODO: Add an explainatory comment
-traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.8, 0.10]}
+traits = {"size": [0.00, 1], "speed": [0.1, 0.1], "sense": [0.0, 0.10]}
 """
 Class Definitions
 """
@@ -26,11 +27,16 @@ class Object:
             Inherits to all other classes which are placed on the board.
         :param position: {type tuple}. Specifies the x and y positions of the particles.
         """
-        if type(position) != tuple:
+        if type(position) != tuple:  # Checks to make sure the position is actually a tuple. Raises error if not.
             raise SyntaxError
-        self.position = position
+        self.position = position  # Defines the position.
 
     def distance(self, other):
+        """
+        Calculates the distance parameter to the next object.
+        :param other: Object to which the distance is calculated.
+        :return: {float} distance
+        """
         return (other.position[0] - self.position[0]) ** 2 + (other.position[1] - self.position[1]) ** 2
 
     def __sub__(self, other):
@@ -43,7 +49,7 @@ class Species:
 
 
 class Organism(Species, Object):
-    def __init__(self, position, species, size=1.0, speed=0.1, sense=1.0, energy=1000):
+    def __init__(self, position, species, size=1.0, speed=0.1, sense=1.0, altruism=False, energy=10000):
         """
         Defines the initialization method for class organism
         :param position: Position of the organism
@@ -63,6 +69,7 @@ class Organism(Species, Object):
         self.size = size
         self.speed = speed
         self.food_count = 0
+        self.altruistic = altruism
 
     def sense_objects(self, board):
         """
@@ -77,8 +84,8 @@ class Organism(Species, Object):
             if np.sqrt(dif[0] ** 2 + dif[
                 1] ** 2) < self.intel and obj != self:  # If the distance to the object is less than sense...
                 if np.sqrt(dif[0] ** 2 + dif[
-                    1] ** 2) < collision_distance and obj.__class__.__name__ == 'Food':  # If object is
-                    # within grabbing distance
+                    1] ** 2) < collision_distance and obj.__class__.__name__ == 'Food':
+                    # If object is within grabbing distance
                     self.consume(obj, board)
                 self.sensed_objects.append(obj)
             else:
@@ -89,7 +96,7 @@ class Organism(Species, Object):
         """
         This allows for the organisms to move aboout the board, making decisions about the food they want
         :param board: {type board} this is the input board
-        :return:
+        :return: None2222
         """
         objs = self.sense_objects(board)  # Finds all close objects
         self.energy -= 1
@@ -210,6 +217,71 @@ class Board:
                                                                             in range(self.size)] + [
                     (self.x[-1][i], self.y[-1][i]) for i in range(self.size)] + [(self.x[:, 0][i], self.y[:, 0][i])
                                                                                  for i in range(self.size)]))
+
+    def run_day(self, food_count):
+        """
+        Runs the day's simulation
+        :return: The day's data as a dict
+        """
+        # First we have to reset the board objects:
+        self.food = [i for i in self.objects if i.__class__.__name__ == 'Food']
+        self.organisms = [i for i in self.objects if i.__class__.__name__ == 'Organism']
+        # Now we reset their positions
+        self.reset_object_positions()
+        # Time to run the simulation:
+        while len([org for org in self.organisms if org.hidden == False]) != 0:
+            """
+            While there are still living organisms on the board.
+            """
+            self.update()
+        """
+        Day has finished. Lets pick up the peices
+        """
+        # Reproduce
+        print [i.food_count for i in self.organisms]
+        self.replicate_generation()
+        # Show all
+        for organism in self.organisms:
+            organism.hidden = False
+            organism.food_count = 0
+            organism.energy = 1000
+        # replenish food
+        for food in self.food:
+            self.remove(food)
+        self.objects += [Food((0, 0)) for i in range(food_count)]
+
+        return self.get_data()
+
+    def replicate_generation(self):
+        """
+        Algorithm for reproduction
+        :return: None
+        """
+        # We start by sharing food from the altruist to the non-altruist
+        altruists = [organism for organism in self.organisms if organism.altruistic == True and organism.food_count > 1]
+        for org in altruists:
+            # Now we share the food
+            dying = [organism for organism in self.organisms if organism.food_count < 1]
+            if len(dying) != 0:
+                # We can some organisms
+                dying[0].food_count = 1
+                org.food_count = 1.5
+            else:
+                pass
+        """
+        Now we actually allow reproduction
+        """
+        for org in self.organisms:
+            if org.food_count >= 2:
+                org.reproduce(self)
+            elif org.food_count == 1.5 and r.uniform(0, 1) < ARP:
+                # Altruists who get lucky
+                org.reproduce(self)
+            elif org.food_count == 0:
+                self.remove(org)
+            else:
+                pass
+        return None
 
     def update(self):
         """
@@ -344,21 +416,19 @@ class Board:
         return data
 
 
-'''
-species = Species('Nate')
-board = Board([Organism((0, 0), species,sense=10),Organism((0,0),species)] + [Food((0, 0)) for i in range(35)], 20)
-board.reset_object_positions()
-
-def animate(i):
-    fig1.clf()
-    print [(i.energy,i.position[0]) for i in board.organisms]
-    board.update()
-    h = board.generate_plot(fig1)
-    return h
-
-fig1 = plt.figure()
-ani = FuncAnimation(fig1,animate,frames=300,interval=1)
-plt.show()
-
-
-'''
+if __name__ == '__main__':
+    fig1 = plt.figure()
+    fig2 = plt.figure()
+    species = Species('A')
+    initial_organisms = [Organism((0, 0), species, energy=1000) for i in range(1)]
+    food_items = [Food((0, 0)) for i in range(45)]
+    board = Board(initial_organisms + food_items, 20)
+    d = [board.get_data()]
+    for i in range(99):
+        h = board.run_day(45)
+        d.append(h)
+        print h['mean_speed'], h['speed']
+    plt.plot(range(100), [d[i]['mean_speed'] for i in range(100)])
+    plt.figure()
+    plt.plot(range(100), [d[i]['N'] for i in range(100)])
+    plt.show()
