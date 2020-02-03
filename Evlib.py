@@ -14,7 +14,7 @@ turn_std_deviation = 0.15
 collision_distance = 0.07
 ARP = 0.5
 # TODO: Add an explainatory comment
-traits = {"size": [0.00, 1], "speed": [0.1, 0.1], "sense": [0.0, 0.10]}
+traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.0, 0.10]}
 """
 Class Definitions
 """
@@ -238,7 +238,6 @@ class Board:
         Day has finished. Lets pick up the peices
         """
         # Reproduce
-        print [i.food_count for i in self.organisms]
         self.replicate_generation()
         # Show all
         for organism in self.organisms:
