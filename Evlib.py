@@ -14,7 +14,7 @@ turn_std_deviation = 0.15
 collision_distance = 0.07
 ARP = 0.5
 # TODO: Add an explainatory comment
-traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.0, 0.10]}
+traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.0, 0.10], 'altruism': [0.1]}
 """
 Class Definitions
 """
@@ -161,7 +161,7 @@ class Organism(Species, Object):
         :return: {type organism} New organism
         """
         # TODO: Make this section scalable for new traits
-        seeds = [r.randint(1, 100) for i in range(3)]  # generates the random seeds
+        seeds = [r.randint(1, 100) for i in range(4)]  # generates the random seeds
         new_traits = []
         # Size
         if seeds[0] <= 100.0 * trait_dictionary['size'][0]:
@@ -181,8 +181,12 @@ class Organism(Species, Object):
             new_traits.append(self.intel + r.uniform(-1 * trait_dictionary['sense'][1], trait_dictionary['sense'][1]))
         else:
             new_traits.append(self.intel)
+        if seeds[3] <= 100.0 * trait_dictionary['altruism'][0]:
+            new_traits.append(not self.altruistic)
+        else:
+            new_traits.append(self.altruistic)
         board.append(Organism(self.position, self.sp, size=new_traits[0], speed=new_traits[1], sense=new_traits[2],
-                              energy=self.energy))
+                              energy=self.energy, altruism=self.altruistic))
 
 
 class Food(Object):
@@ -273,7 +277,7 @@ class Board:
         for org in self.organisms:
             if org.food_count >= 2:
                 org.reproduce(self)
-            elif org.food_count == 1.5 and r.uniform(0, 1) < ARP:
+            elif org.food_count == 1.5 and r.uniform(0, 1) > ARP:
                 # Altruists who get lucky
                 org.reproduce(self)
             elif org.food_count == 0:
@@ -411,7 +415,12 @@ class Board:
                 'mean_size': np.average([i.size for i in self.organisms]),
                 'speed': [i.speed for i in self.organisms],
                 'intel': [i.intel for i in self.organisms],
-                'size': [i.size for i in self.organisms]}
+                'size': [i.size for i in self.organisms],
+                'altruists': [i for i in self.organisms if i.altruistic],
+                'egotists': [i for i in self.organisms if not i.altruistic],
+                'NA': len([i for i in self.organisms if i.altruistic]),
+                'NE': len([i for i in self.organisms if not i.altruistic]),
+                'AT POP': [i.altruistic for i in self.organisms]}
         return data
 
 
@@ -423,7 +432,7 @@ if __name__ == '__main__':
     food_items = [Food((0, 0)) for i in range(45)]
     board = Board(initial_organisms + food_items, 20)
     d = [board.get_data()]
-    for i in range(99):
+    for p in range(99):
         h = board.run_day(45)
         d.append(h)
         print h['mean_speed'], h['speed']

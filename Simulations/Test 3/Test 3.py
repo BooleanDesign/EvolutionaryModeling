@@ -6,13 +6,13 @@ import Evlib as E
 import matplotlib.pyplot as plt
 import numpy as np
 
-data_file = open('data.csv', 'w+')  # Opens data.csv as the main datafile
+data_file = open('Trial 1.csv', 'w+')  # Opens Trial 1.csv as the main datafile
 # Set up the simulation with 1 organism and 45 food items
 species = E.Species('A')
 initial_organisms = [E.Organism((0, 0), species, energy=1000) for i in range(35)]
 food_items = [E.Food((0, 0)) for i in range(45)]
 full_data = []
-E.traits['speed'] = (0.01, 1)
+E.traits['speed'] = (0.05, 0.1)
 """
 Run the simulation
 """
@@ -22,7 +22,7 @@ for w in range(5):
     food_items = [E.Food((0, 0)) for i in range(45)]
     board = E.Board(initial_organisms + food_items, 20)
     d = [board.get_data()]
-    for k in range(30):
+    for k in range(50):
         print w, k, d[k]['mean_speed']
         h = board.run_day(45)
         d.append(h)
