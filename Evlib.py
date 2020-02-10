@@ -13,6 +13,7 @@ Essential Configuration Parameters
 turn_std_deviation = 0.15
 collision_distance = 0.07
 ARP = 0.5
+Altruistic_discrimination = False
 # TODO: Add an explainatory comment
 traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.0, 0.10], 'altruism': [0.1]}
 """
@@ -264,7 +265,11 @@ class Board:
         altruists = [organism for organism in self.organisms if organism.altruistic == True and organism.food_count > 1]
         for org in altruists:
             # Now we share the food
-            dying = [organism for organism in self.organisms if organism.food_count < 1]
+            if Altruistic_discrimination == False:
+                dying = [organism for organism in self.organisms if organism.food_count < 1]
+            else:
+                dying = [organism for organism in self.organisms if
+                         organism.food_count < 1 and organism.altruistic == True]
             if len(dying) != 0:
                 # We can some organisms
                 dying[0].food_count = 1
