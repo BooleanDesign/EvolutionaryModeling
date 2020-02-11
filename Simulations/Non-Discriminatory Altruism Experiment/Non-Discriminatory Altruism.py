@@ -1,12 +1,12 @@
 """
-Test 1: Population growth under food scarcity.
+Population Growth Valitation Test: Population growth under food scarcity.
 Written by: Nathan Diggins
 """
 import Evlib as E
 import matplotlib.pyplot as plt
 import numpy as np
 
-data_file = open('Trial 11.csv', 'w+')  # Opens Trial 1.csv as the main datafile
+data_file = open('Trial 1.csv', 'w+')  # Opens Trial 1.csv as the main datafile
 # Set up the simulation with 1 organism and 45 food items
 species = E.Species('A')
 initial_organisms = [E.Organism((0, 0), species, energy=1000) for i in range(18)] + [

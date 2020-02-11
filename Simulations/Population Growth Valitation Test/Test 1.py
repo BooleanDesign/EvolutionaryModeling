@@ -1,5 +1,5 @@
 """
-Test 1: Population growth under food scarcity.
+Population Growth Valitation Test: Population growth under food scarcity.
 Written by: Nathan Diggins
 """
 import Evlib as E
