@@ -15,7 +15,7 @@ collision_distance = 0.07
 ARP = 0.5
 Altruistic_discrimination = False
 # TODO: Add an explainatory comment
-traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.0, 0.10], 'altruism': [0.1]}
+traits = {"size": [0.00, 1], "speed": [0.0, 0.1], "sense": [0.0, 0.10], 'altruism': [0.01]}
 """
 Class Definitions
 """
@@ -97,10 +97,10 @@ class Organism(Species, Object):
         """
         This allows for the organisms to move aboout the board, making decisions about the food they want
         :param board: {type board} this is the input board
-        :return: None2222
+        :return: None
         """
         objs = self.sense_objects(board)  # Finds all close objects
-        self.energy -= 1
+        self.energy -= ((10.0 * self.speed) ** 2)
         # TODO: Relate the size to the total energy expenditure
         if self.energy <= 0 or self.hidden == True:
             return False

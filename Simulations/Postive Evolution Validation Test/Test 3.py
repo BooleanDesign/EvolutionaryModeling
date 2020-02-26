@@ -1,5 +1,5 @@
 """
-Population Growth Valitation Test: Population growth under food scarcity.
+Positive Evolution Test: Evolution of Speed under Selective Pressure.
 Written by: Nathan Diggins
 """
 import Evlib as E

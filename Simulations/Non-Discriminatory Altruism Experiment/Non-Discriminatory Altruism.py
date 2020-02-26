@@ -1,5 +1,5 @@
 """
-Population Growth Valitation Test: Population growth under food scarcity.
+Non-Discriminatory Evolution Test.
 Written by: Nathan Diggins
 """
 import Evlib as E

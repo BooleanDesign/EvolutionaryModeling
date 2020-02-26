@@ -1,5 +1,5 @@
 """
-Population Growth Valitation Test: Population growth under food scarcity.
+Null Evolution Test; Evolution under no Pressures.
 Written by: Nathan Diggins
 """
 import Evlib as E
